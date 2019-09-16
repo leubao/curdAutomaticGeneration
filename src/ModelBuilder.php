@@ -64,31 +64,34 @@ class ModelBuilder
         $realTableName = $this->setRealTableName() . 'Model';
         $phpClass = $this->addClassBaseContent($this->config->getTableName(), $realTableName, $phpNamespace, $this->config->getTableComment(), $this->config->getTableColumns());
         //配置getAll
-        $this->addGetAllMethod($phpClass);
+        $this->addGetAllMethod($phpClass, $this->config->getAllKeyword());
         $this->addGetOneMethod($phpClass, $this->config->getTableName(), $this->config->getTableColumns());
         $this->addAddMethod($phpClass, $this->config->getTableName(), $this->config->getTableColumns());
         $this->addDeleteMethod($phpClass, $this->config->getTableName(), $this->config->getTableColumns());
         $this->addUpdateMethod($phpClass, $this->config->getTableName(), $this->config->getTableColumns());
         //配置根据索引来查询的方法项
-        $indexList = $this->getIndexList($this->config->getTableColumns());
-        foreach ($indexList as $index) {
-            $this->addIndexGetAllMethod($phpClass, $index);
-            $this->addIndexGetOneMethod($phpClass, $index);
+       // $indexList = $this->getIndexList($this->config->getTableColumns());
+        if(!empty($this->config->getIndexList)){
+            foreach ($this->config->getIndexList as $index => $value) {
+                $this->addIndexGetAllMethod($phpClass, $index);
+                $this->addIndexGetOneMethod($phpClass, $index);
+            }
         }
+        
 
         return $this->createPHPDocument($this->config->getBaseDirectory() . '/' . $realTableName, $phpNamespace, $this->config->getTableColumns());
     }
 
-    protected function getIndexList($columns)
-    {
-        $list = [];
-        foreach ($columns as $column) {
-            if ($column['Key'] == 'MUL') {
-                $list[] = $column;
-            }
-        }
-        return $list;
-    }
+    // protected function getIndexList($columns)
+    // {
+    //     $list = [];
+    //     foreach ($columns as $column) {
+    //         if ($column['Key'] == 'MUL') {
+    //             $list[] = $column;
+    //         }
+    //     }
+    //     return $list;
+    // }
 
     /**
      * 处理表真实名称
@@ -343,8 +346,9 @@ Body;
     {
         $method = $phpClass->addMethod('getAllBy' . Str::studly($column['Field']));
         if (empty($keyword)) {
-            echo "(getAllBy{$column['Field']})请输入搜索的关键字\n";
-            $keyword = trim(fgets(STDIN));
+            //echo "(getAllBy{$column['Field']})请输入搜索的关键字\n";
+            //$keyword = trim(fgets(STDIN));
+            $keyword = trim($column['keyword']);
         }
         //配置基础注释
         $method->addComment("@getAll{$column['Field']}");
@@ -427,20 +431,30 @@ Body;
      */
     protected function createPHPDocument($fileName, $fileContent, $tableColumns)
     {
-//        var_dump($fileName.'.php');
-        if ($this->config->isConfirmWrite()) {
-            if (file_exists($fileName . '.php')) {
-                echo "(Model)当前路径已经存在文件,是否覆盖?(y/n)\n";
-                if (trim(fgets(STDIN)) == 'n') {
-                    echo "已结束运行\n";
-                    return false;
-                }
+        // if ($this->config->isConfirmWrite()) {
+        //     if (file_exists($fileName . '.php')) {
+        //         echo "(Model)当前路径已经存在文件,是否覆盖?(y/n)\n";
+        //         if (trim(fgets(STDIN)) == 'n') {
+        //             echo "已结束运行\n";
+        //             return false;
+        //         }
+        //     }
+        // }
+        if (file_exists($fileName . '.php')) {
+            if($this->config->isConfirmWrite()){
+                //开启覆盖
+                $content = "<?php\n\n{$fileContent}\n";
+                $result = file_put_contents($fileName . '.php', $content);
+            }else{
+                $result = false;
             }
+        }else{
+            $content = "<?php\n\n{$fileContent}\n";
+            $result = file_put_contents($fileName . '.php', $content); 
         }
-        $content = "<?php\n\n{$fileContent}\n";
-//        var_dump($content);
-        $result = file_put_contents($fileName . '.php', $content);
-        return $result == false ? $result : $fileName . '.php';
+        
+        
+        return $result == false ? $fileName . '.php'.'已存在' : $fileName . '.php';
     }
 
     /**

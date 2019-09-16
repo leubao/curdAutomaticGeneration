@@ -1,9 +1,11 @@
 <?php
+
 /**
- * Created by PhpStorm.
- * User: tioncico
- * Date: 19-5-1
- * Time: 上午9:31
+ * 自动生成验证器
+ * @Author: jingzhou
+ * @Date:   2019-09-09 00:34:12
+ * @Last Modified by:   IT Work
+ * @Last Modified time: 2019-09-16 00:31:52
  */
 
 namespace AutomaticGeneration\Config;
@@ -11,9 +13,9 @@ namespace AutomaticGeneration\Config;
 
 use EasySwoole\Spl\SplBean;
 
-class ControllerConfig extends SplBean
+class ValidatorConfig extends SplBean
 {
-    protected $extendClass;//继承的基类
+	protected $extendClass;//继承的基类
     protected $baseDirectory;//生成的目录
     protected $baseNamespace;//生成的命名空间
     protected $tablePre = '';//数据表前缀
@@ -31,11 +33,25 @@ class ControllerConfig extends SplBean
     protected $authSessionName;//额外需要的授权session名称
     protected $modelClass;//model的类名
     protected $beanClass;//bean的类名
-    protected $mysqlPoolClass;//mysql连接池类名
     protected $mysqlPoolName;//mysql连接池库名称
     protected $isConfirmWrite=true;
+    protected $validatorName;//文件名
 
+    /**
+     * @return mixed
+     */
+    public function getValidatorName()
+    {
+        return $this->validatorName;
+    }
 
+    /**
+     * @param mixed $LogicName
+     */
+    public function setValidatorName($validatorName): void
+    {
+        $this->validatorName = $validatorName;
+    }
 
     /**
      * @return mixed
@@ -270,22 +286,6 @@ class ControllerConfig extends SplBean
     /**
      * @return mixed
      */
-    public function getMysqlPoolClass()
-    {
-        return $this->mysqlPoolClass;
-    }
-
-    /**
-     * @param mixed $mysqlPoolClass
-     */
-    public function setMysqlPoolClass($mysqlPoolClass): void
-    {
-        $this->mysqlPoolClass = $mysqlPoolClass;
-    }
-
-    /**
-     * @return mixed
-     */
     public function getMysqlPoolName()
     {
         return $this->mysqlPoolName;
@@ -298,7 +298,6 @@ class ControllerConfig extends SplBean
     {
         $this->mysqlPoolName = $mysqlPoolName;
     }
-
     /**
      * @return bool
      */
@@ -314,5 +313,4 @@ class ControllerConfig extends SplBean
     {
         $this->isConfirmWrite = $isConfirmWrite;
     }
-
 }

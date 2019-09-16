@@ -65,8 +65,13 @@ class ControllerBuilder
         $realTableName = $this->setRealTableName();
         $phpNamespace = new PhpNamespace($this->config->getBaseNamespace());
         $phpNamespace->addUse($this->config->getMysqlPoolClass());
-        $phpNamespace->addUse($this->config->getModelClass());
-        $phpNamespace->addUse($this->config->getBeanClass());
+        //zj 模型和bean 在控制创建中非必须
+        if($this->config->getModelClass()){
+            $phpNamespace->addUse($this->config->getModelClass());
+        }
+        if($this->config->getBeanClass()){
+            $phpNamespace->addUse($this->config->getBeanClass());
+        }
         $phpNamespace->addUse(Status::class);
         $phpNamespace->addUse(Validate::class);
         $phpNamespace->addUse(Mysql::class);
@@ -82,7 +87,8 @@ class ControllerBuilder
         $this->addGetAllDataMethod($phpClass);
         $this->addDeleteDataMethod($phpClass);
 
-        $this->addValidateMethod($phpClass);
+        //zj 验证器独立不在controller展示
+        //$this->addValidateMethod($phpClass);
 
         return $this->createPHPDocument($this->config->getBaseDirectory() . '/' . $realTableName, $phpNamespace, $this->config->getTableColumns());
     }
@@ -480,19 +486,31 @@ Body;
      */
     protected function createPHPDocument($fileName, $fileContent, $tableColumns)
     {
-        if ($this->config->isConfirmWrite()) {
-            if (file_exists($fileName . '.php')) {
-                echo "(Controller)当前路径已经存在文件,是否覆盖?(y/n)\n";
-                if (trim(fgets(STDIN)) == 'n') {
-                    echo "已结束运行\n";
-                    return false;
-                }
+        // if ($this->config->isConfirmWrite()) {
+        //     if (file_exists($fileName . '.php')) {
+        //         echo "(Controller)当前路径已经存在文件,是否覆盖?(y/n)\n";
+        //         if (trim(fgets(STDIN)) == 'n') {
+        //             echo "已结束运行\n";
+        //             return false;
+        //         }
+        //     }
+        // }
+        
+        if (file_exists($fileName . '.php')) {
+            if($this->config->isConfirmWrite()){
+                //开启覆盖
+                $content = "<?php\n\n{$fileContent}\n";
+                $result = file_put_contents($fileName . '.php', $content);
+            }else{
+                $result = false;
             }
+        }else{
+            $content = "<?php\n\n{$fileContent}\n";
+            $result = file_put_contents($fileName . '.php', $content); 
         }
-        $content = "<?php\n\n{$fileContent}\n";
-        $result = file_put_contents($fileName . '.php', $content);
-
-        return $result == false ? $result : $fileName . '.php';
+        
+        
+        return $result == false ? $fileName . '.php'.'已存在' : $fileName . '.php';
     }
 
 

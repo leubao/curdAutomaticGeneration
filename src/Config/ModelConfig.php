@@ -27,7 +27,8 @@ class ModelConfig extends SplBean
     ];//文件名生成时,忽略的字符串(list,log等)
     protected $primaryKey;
     protected $isConfirmWrite = true;
-
+    protected $keyword;//getAll搜索关键字 zj
+    protected $indexList = [];//其它关键字搜索 zj
 
     /**
      * @return mixed
@@ -211,4 +212,29 @@ class ModelConfig extends SplBean
         $this->isConfirmWrite = $isConfirmWrite;
     }//模型的主键
 
+    //全文搜索关键字
+    public function setAllKeyword(string $keyword)
+    {
+        $this->keyword = $keyword;
+    }
+
+    public function getAllKeyword()
+    {
+        return $this->keyword;
+    }
+    //zj
+    public function setIndexList(array $list): void
+    {
+        $lists = [];
+        foreach ($this->getTableColumns as $key => $value) {
+            $lists = $value;
+            $lists['keyword'] = $list[$value['Field']];
+        }
+        $this->indexList = $lists;
+    }
+    //zj
+    public function getIndexList()
+    {
+        return $this->indexList;
+    }
 }

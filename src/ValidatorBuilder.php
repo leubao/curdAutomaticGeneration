@@ -1,45 +1,44 @@
 <?php
+
 /**
- * Created by PhpStorm.
- * User: eValor
- * Date: 2018/11/10
- * Time: 上午1:52
+ * @Author: jingzhou
+ * @Date:   2019-09-09 00:40:53
+ * @Last Modified by:   IT Work
+ * @Last Modified time: 2019-09-16 00:42:12
  */
 
 namespace AutomaticGeneration;
 
-use AutomaticGeneration\Config\BeanConfig;
+use AutomaticGeneration\Config\ValidatorConfig;
+use EasySwoole\Http\Message\Status;
+use EasySwoole\MysqliPool\Mysql;
 use EasySwoole\Utility\File;
 use EasySwoole\Utility\Str;
+use App\Utils\Validator\Validate;
+use http\Message\Body;
 use Nette\PhpGenerator\ClassType;
 use Nette\PhpGenerator\PhpNamespace;
 
 /**
- * easyswoole Bean快速构建器
- * Class BeanBuilder
+ * easyswoole 验证器快速构建器
+ * Class ControllerBuilder
  * @package AutomaticGeneration
  */
-class BeanBuilder
+class ValidatorBuilder
 {
-    /**
+	/**
      * @var $config BeanConfig;
      */
     protected $config;
-
-    protected $className;
-
     /**
      * BeanBuilder constructor.
      * @param        $config
      * @throws \Exception
      */
-    public function __construct(BeanConfig $config)
+    public function __construct(ValidatorConfig $config)
     {
         $this->config = $config;
         $this->createBaseDirectory($config->getBaseDirectory());
-        $realTableName = $this->setRealTableName() . 'Bean';
-        $this->className = $this->config->getBaseNamespace() . '\\' . $realTableName;
-
     }
 
     /**
@@ -60,35 +59,77 @@ class BeanBuilder
      * @author Tioncico
      * Time: 19:49
      */
-    public function generateBean()
+    public function generateValidator()
     {
-        $realTableName = $this->setRealTableName() . 'Bean';
-
+        $realTableName = $this->setRealTableName();
         $phpNamespace = new PhpNamespace($this->config->getBaseNamespace());
+        
+        $phpNamespace->addUse(Status::class);
+        //$phpNamespace->addUse(Validate::class);
+        $phpNamespace->addUse(Mysql::class);
+
+
         $phpClass = $phpNamespace->addClass($realTableName);
-        $phpClass->addExtend("EasySwoole\Spl\\SplBean");
+
+        $validateData = $this->getValidateArr();
+        $phpClass->addProperty('rule', $validateData['rule'])
+            ->setVisibility('protected')
+            ->addComment('@var rule[] 验证规则');
+
+        $phpClass->addProperty('message', $validateData['message'])
+            ->setVisibility('protected')
+            ->addComment('@var message[] 不通过提示');
+
+        $phpClass->addProperty('scene', $validateData['scene'])
+            ->setVisibility('protected')
+            ->addComment('@var scene[] 验证场景');
+
+
+
+        $phpClass->addExtend($this->config->getExtendClass());
         $phpClass->addComment("{$this->config->getTableComment()}");
         $phpClass->addComment("Class {$realTableName}");
         $phpClass->addComment('Create With Automatic Generator');
+
+        //$this->addValidateMethod($phpClass);
+        $fileName = $this->config->getBaseDirectory().'/'.$this->config->getValidatorName();
+        return $this->createPHPDocument($fileName, $phpNamespace, $this->config->getTableColumns());
+    }
+    public function getValidateArr()
+    {
+        $rule = [];
+        $message = [];
+        $rule = [];
+
+        //存在时验证
+        $rule['keyword'] = 'chsAlphaNum';
+        $rule['page'] = 'number';
+        $rule['limit'] = 'number';
+        //全部规则
         foreach ($this->config->getTableColumns() as $column) {
-            $name = $column['Field'];
-            $comment = $column['Comment'];
-            $columnType = $this->convertDbTypeToDocType($column['Type']);
-            $phpClass->addComment("@property {$columnType} {$name} | {$comment}");
-            $phpClass->addProperty($column['Field'])->setVisibility('protected');
-            $this->addSetMethod($phpClass, $column['Field']);
-            $this->addGetMethod($phpClass, $column['Field']);
+            if ($column['Key'] == 'PRI') {
+                $this->config->setPrimaryKey($column['Field']);
+            } 
+            //规则
+            $rule[$column['Field']] = 'require';
+            //提示
+            $message[$column['Field'].'.require'] = $column['Comment'];
+            
+            $field[] = $column['Field'];
         }
-        return $this->createPHPDocument($this->config->getBaseDirectory() . '/' . $realTableName, $phpNamespace, $this->config->getTableColumns());
+        //场景
+        $scene['add'] = array_merge(array_diff($field, $this->config->getPrimaryKey()));
+        $scene['update'] = $field;
+        $scene['getAll'] = ['page','limit','keyword'];
+        $scene['getOne'] = [
+            $this->config->getPrimaryKey()
+        ];
+        $scene['delete'] = [
+            $this->config->getPrimaryKey()
+        ];
+        return ['rule' => $rule, 'message' => $message,   'scene' =>  $scene];
     }
 
-    /**
-     * 处理表真实名称
-     * setRealTableName
-     * @return bool|mixed|string
-     * @author tioncico
-     * Time: 下午11:55
-     */
     /**
      * 处理表真实名称
      * setRealTableName
@@ -111,27 +152,6 @@ class BeanBuilder
         $tableName = ucfirst(Str::camel($tableName));
         $this->config->setRealTableName($tableName);
         return $tableName;
-    }
-
-    function addSetMethod(ClassType $phpClass, $column)
-    {
-        $method = $phpClass->addMethod("set" . Str::studly($column));
-        $method->addParameter($column);
-        $methodBody = <<<Body
-\$this->$column = \$$column;
-Body;
-        //配置方法内容
-        $method->setBody($methodBody);
-    }
-
-    function addGetMethod(ClassType $phpClass, $column)
-    {
-        $method = $phpClass->addMethod("get" . Str::studly($column));
-        $methodBody = <<<Body
-return \$this->$column;
-Body;
-        //配置方法内容
-        $method->setBody($methodBody);
     }
 
     /**
@@ -168,16 +188,6 @@ Body;
      */
     protected function createPHPDocument($fileName, $fileContent, $tableColumns)
     {
-        // if ($this->config->isConfirmWrite()) {
-        //     //zj 开启覆盖
-        //     if (file_exists($fileName . '.php')) {
-        //         echo "(Bean)当前路径已经存在文件,是否覆盖?(y/n)\n";
-        //         if (trim(fgets(STDIN)) == 'n') {
-        //             echo "已结束运行\n";
-        //             return false;
-        //         }
-        //     }
-        // }
         if (file_exists($fileName . '.php')) {
             if($this->config->isConfirmWrite()){
                 //开启覆盖
@@ -193,13 +203,5 @@ Body;
         
         
         return $result == false ? $fileName . '.php'.'已存在' : $fileName . '.php';
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getClassName()
-    {
-        return $this->className;
     }
 }

@@ -72,32 +72,32 @@ BODY
         $phpClass->addComment("Class {$realTableName}");
         $phpClass->addComment('Create With Automatic Generator');
         $statusNameSpace = '\\'.Status::class;
-        $phpClass->addMethod('index')
-            ->addBody(<<<BODY
-             \$this->actionNotFound('index');
-BODY
-            );
-        $phpClass->addMethod('onRequest')->setReturnNullable(true)->setReturnType('bool')
-        ->setBody(<<<BODY
-if (!parent::onRequest(\$action)) {
-    return false;
-};
-/*
-* 各个action的参数校验
-*/
-\$v = \$this->getValidateRule(\$action);
-if (\$v && !\$this->validate(\$v)) {
-    \$this->writeJson($statusNameSpace::CODE_BAD_REQUEST, ['errorCode' => 1, 'data' => []], \$v->getError()->__toString());
-    return false;
-}
-return true;
-BODY
-        )->addParameter('action')->setTypeHint('string')->setNullable(true);
+//         $phpClass->addMethod('index')
+//             ->addBody(<<<BODY
+//              \$this->actionNotFound('index');
+// BODY
+//             );
+//         $phpClass->addMethod('onRequest')->setReturnNullable(true)->setReturnType('bool')
+//         ->setBody(<<<BODY
+// if (!parent::onRequest(\$action)) {
+//     return false;
+// };
+// /*
+// * 各个action的参数校验
+// */
+// \$v = \$this->getValidateRule(\$action);
+// if (\$v && !\$this->validate(\$v)) {
+//     \$this->writeJson($statusNameSpace::CODE_BAD_REQUEST, ['errorCode' => 1, 'data' => []], \$v->getError()->__toString());
+//     return false;
+// }
+// return true;
+// BODY
+//         )->addParameter('action')->setTypeHint('string')->setNullable(true);
 
-        $phpClass->addMethod('getValidateRule')->setAbstract(true)->setVisibility('protected')
-            ->setReturnNullable(true)
-            ->setReturnType(Validate::class)
-            ->addParameter('action')->setTypeHint('string')->setNullable(true);
+//         $phpClass->addMethod('getValidateRule')->setAbstract(true)->setVisibility('protected')
+//             ->setReturnNullable(true)
+//             ->setReturnType(Validate::class)
+//             ->addParameter('action')->setTypeHint('string')->setNullable(true);
 
         return $this->createPHPDocument($this->appPath . '/HttpController/' . $realTableName, $phpNamespace);
     }
