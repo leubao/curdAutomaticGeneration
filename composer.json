@@ -1,5 +1,5 @@
 {
-  "name": "tioncico/curd-automatic-generation",
+  "name": "xunzhou/curd-automatic-generation",
   "type": "l",
   "license": "Apache-2.0",
   "require": {
@@ -9,8 +9,8 @@
   },
   "authors": [
     {
-      "name": "tioncico",
-      "email": "1067197739@qq.com"
+      "name": "xunzhou",
+      "email": "zhoujing@leubao.com"
     }
   ],
   "minimum-stability": "dev",
