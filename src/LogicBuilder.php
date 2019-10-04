@@ -5,7 +5,7 @@
  * @Author: jingzhou
  * @Date:   2019-09-09 14:59:23
  * @Last Modified by:   IT Work
- * @Last Modified time: 2019-09-15 23:35:43
+ * @Last Modified time: 2019-09-17 12:54:43
  */
 namespace AutomaticGeneration;
 
@@ -67,7 +67,7 @@ class LogicBuilder
     {
         $phpNamespace = new PhpNamespace($this->config->getBaseNamespace());
         $phpClass = $this->addClassBaseContent($phpNamespace, $this->config->getLogicName());
-        $fileName = $this->config->getBaseDirectory().'/'.$this->config->getLogicName();
+        $fileName = $this->config->getBaseDirectory().'/'.ucfirst(Str::camel($this->config->getLogicName()));
         return $this->createPHPDocument($fileName, $phpNamespace);
     }
 

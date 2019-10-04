@@ -4,13 +4,12 @@
  * @Author: jingzhou
  * @Date:   2019-09-09 00:40:53
  * @Last Modified by:   IT Work
- * @Last Modified time: 2019-09-16 00:42:12
+ * @Last Modified time: 2019-09-17 21:38:22
  */
 
 namespace AutomaticGeneration;
 
 use AutomaticGeneration\Config\ValidatorConfig;
-use EasySwoole\Http\Message\Status;
 use EasySwoole\MysqliPool\Mysql;
 use EasySwoole\Utility\File;
 use EasySwoole\Utility\Str;
@@ -64,10 +63,9 @@ class ValidatorBuilder
         $realTableName = $this->setRealTableName();
         $phpNamespace = new PhpNamespace($this->config->getBaseNamespace());
         
-        $phpNamespace->addUse(Status::class);
-        //$phpNamespace->addUse(Validate::class);
-        $phpNamespace->addUse(Mysql::class);
 
+        $phpNamespace->addUse(Mysql::class);
+        $phpNamespace->addUse(Validate::class);
 
         $phpClass = $phpNamespace->addClass($realTableName);
 
@@ -92,7 +90,7 @@ class ValidatorBuilder
         $phpClass->addComment('Create With Automatic Generator');
 
         //$this->addValidateMethod($phpClass);
-        $fileName = $this->config->getBaseDirectory().'/'.$this->config->getValidatorName();
+        $fileName = $this->config->getBaseDirectory().'/'.ucfirst(Str::camel($this->config->getValidatorName()));
         return $this->createPHPDocument($fileName, $phpNamespace, $this->config->getTableColumns());
     }
     public function getValidateArr()
@@ -105,20 +103,28 @@ class ValidatorBuilder
         $rule['keyword'] = 'chsAlphaNum';
         $rule['page'] = 'number';
         $rule['limit'] = 'number';
+        //排除验证字段 
+        $outField = [
+            'delete_time','update_time','create_time'
+        ];
         //全部规则
         foreach ($this->config->getTableColumns() as $column) {
             if ($column['Key'] == 'PRI') {
                 $this->config->setPrimaryKey($column['Field']);
             } 
-            //规则
-            $rule[$column['Field']] = 'require';
+            if(!in_array($column['Field'], $outField)){
+                //规则
+                $rule[$column['Field']] = 'require';
+                $field[] = $column['Field'];
+            }
             //提示
-            $message[$column['Field'].'.require'] = $column['Comment'];
+            if(!empty($column['Comment'])){
+                $message[$column['Field'].'.require'] = $column['Comment'];
+            }
             
-            $field[] = $column['Field'];
         }
         //场景
-        $scene['add'] = array_merge(array_diff($field, $this->config->getPrimaryKey()));
+        $scene['add'] = array_merge(array_diff($field, array($this->config->getPrimaryKey())));
         $scene['update'] = $field;
         $scene['getAll'] = ['page','limit','keyword'];
         $scene['getOne'] = [

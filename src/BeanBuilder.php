@@ -89,13 +89,6 @@ class BeanBuilder
      * @author tioncico
      * Time: 下午11:55
      */
-    /**
-     * 处理表真实名称
-     * setRealTableName
-     * @return bool|mixed|string
-     * @author tioncico
-     * Time: 下午11:55
-     */
     function setRealTableName()
     {
         if ($this->config->getRealTableName()) {

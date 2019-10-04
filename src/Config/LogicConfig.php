@@ -4,12 +4,13 @@
  * @Author: jingzhou
  * @Date:   2019-09-09 12:57:45
  * @Last Modified by:   IT Work
- * @Last Modified time: 2019-09-15 19:32:54
+ * @Last Modified time: 2019-09-17 21:30:50
  */
 namespace AutomaticGeneration\Config;
 use EasySwoole\Spl\SplBean;
 class LogicConfig extends SplBean
 {
+    protected $extendClass;//继承的基类
 	protected $logicName;//名称
     protected $baseDirectory;//生成的目录
     protected $baseNamespace;//生成的命名空间

@@ -34,8 +34,8 @@ class ControllerConfig extends SplBean
     protected $mysqlPoolClass;//mysql连接池类名
     protected $mysqlPoolName;//mysql连接池库名称
     protected $isConfirmWrite=true;
-
-
+    protected $isValidator;//是否使用验证器
+    protected $validate;
 
     /**
      * @return mixed
@@ -314,5 +314,30 @@ class ControllerConfig extends SplBean
     {
         $this->isConfirmWrite = $isConfirmWrite;
     }
-
+    /**
+     * @Author   zhoujing                 <zhoujing@leubao.com>
+     * @DateTime 2019-09-20T14:57:33+0800
+     * @return   bool 
+     */
+    public function isValidator(): bool
+    {
+        return $this->isValidator;
+    }
+    /**
+     * @Author   zhoujing                 <zhoujing@leubao.com>
+     * @DateTime 2019-09-20T14:57:51+0800
+     * @param    bool                     $isValidator
+     */
+    public function setIsValidator(bool $isValidator): void
+    {
+        $this->isValidator = $isValidator;
+    }
+    public function getValidate()
+    {
+        return $this->validate;
+    }
+    public function setValidate($validate): void
+    {
+        $this->validate = $validate;
+    }
 }

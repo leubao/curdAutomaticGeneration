@@ -10,6 +10,7 @@ namespace AutomaticGeneration;
 
 use AutomaticGeneration\Config\ControllerConfig;
 use EasySwoole\Http\Message\Status;
+use App\Utils\Code;
 use EasySwoole\MysqliPool\Mysql;
 use EasySwoole\Utility\File;
 use EasySwoole\Utility\Str;
@@ -64,7 +65,7 @@ class ControllerBuilder
     {
         $realTableName = $this->setRealTableName();
         $phpNamespace = new PhpNamespace($this->config->getBaseNamespace());
-        $phpNamespace->addUse($this->config->getMysqlPoolClass());
+        //$phpNamespace->addUse($this->config->getMysqlPoolClass());
         //zj 模型和bean 在控制创建中非必须
         if($this->config->getModelClass()){
             $phpNamespace->addUse($this->config->getModelClass());
@@ -72,11 +73,13 @@ class ControllerBuilder
         if($this->config->getBeanClass()){
             $phpNamespace->addUse($this->config->getBeanClass());
         }
-        $phpNamespace->addUse(Status::class);
-        $phpNamespace->addUse(Validate::class);
+        $phpNamespace->addUse(Code::class);
+        //$phpNamespace->addUse(Validate::class);
         $phpNamespace->addUse(Mysql::class);
         $phpNamespace->addUse($this->config->getExtendClass());
         $phpClass = $phpNamespace->addClass($realTableName);
+        //增加所属模块继承的改变
+        
         $phpClass->addExtend($this->config->getExtendClass());
         $phpClass->addComment("{$this->config->getTableComment()}");
         $phpClass->addComment("Class {$realTableName}");
@@ -187,6 +190,17 @@ BODY;
         }
         $methodBody .= <<<Body
 \$param = \$this->request()->getRequestParam();
+
+Body;
+        if($this->config->isValidator()){
+            $methodBody .= <<<Body
+if (\$this->validator( \$param, '{$this->config->getValidate()}.add' ) !== true ) {
+    \$this->writeJson(Code::error, [], \$this->getValidator()->getError() );
+}
+
+Body;
+        }
+        $methodBody .= <<<Body
 \$model = new {$modelName}(\$db);
 \$bean = new {$beanName}();
 
@@ -212,9 +226,9 @@ Body;
 \$rs = \$model->add(\$bean);
 if (\$rs) {
     \$bean->$setPrimaryKeyMethodName(\$db->getInsertId());
-    \$this->writeJson(Status::CODE_OK, \$bean->toArray(), "success");
+    \$this->writeJson(Code::CODE_OK, \$bean->toArray(), "success");
 } else {
-    \$this->writeJson(Status::CODE_BAD_REQUEST, [], \$db->getLastError());
+    \$this->writeJson(Code::CODE_BAD_REQUEST, [], \$db->getLastError());
 }
 Body;
         $method->setBody($methodBody);
@@ -253,10 +267,22 @@ Body;
         }
         $methodBody .= <<<Body
 \$param = \$this->request()->getRequestParam();
+
+Body;
+        if($this->config->isValidator()){
+            $methodBody .= <<<Body
+if (\$this->validator( \$param, '{$this->config->getValidate()}.update' ) !== true ) {
+    \$this->writeJson(Code::error, [], \$this->getValidator()->getError() );
+}
+
+Body;
+        }
+
+        $methodBody .= <<<Body
 \$model = new {$modelName}(\$db);
 \$bean = \$model->getOne(new {$beanName}(['{$this->config->getPrimaryKey()}' => \$param['{$this->config->getPrimaryKey()}']]));
 if (empty(\$bean)) {
-    \$this->writeJson(Status::CODE_BAD_REQUEST, [], '该数据不存在');
+    \$this->writeJson(Code::CODE_BAD_REQUEST, [], '该数据不存在');
     return false;
 }
 \$updateBean = new {$beanName}();
@@ -278,9 +304,9 @@ Body;
         $methodBody .= <<<Body
 \$rs = \$model->update(\$bean, \$updateBean->toArray([], \$updateBean::FILTER_NOT_NULL));
 if (\$rs) {
-    \$this->writeJson(Status::CODE_OK, \$rs, "success");
+    \$this->writeJson(Code::CODE_OK, \$rs, "success");
 } else {
-    \$this->writeJson(Status::CODE_BAD_REQUEST, [], \$db->getLastError());
+    \$this->writeJson(Code::CODE_BAD_REQUEST, [], \$db->getLastError());
 }
 Body;
         $method->setBody($methodBody);
@@ -318,12 +344,24 @@ Body;
         }
         $methodBody .= <<<Body
 \$param = \$this->request()->getRequestParam();
+
+Body;
+var_dump($this->config->getValidate());
+        if($this->config->isValidator()){
+            $methodBody .= <<<Body
+if (\$this->validator( \$param, '{$this->config->getValidate()}.add' ) !== true ) {
+    \$this->writeJson(Code::error, [], \$this->getValidator()->getError() );
+}
+
+Body;
+        }
+        $methodBody .= <<<Body
 \$model = new {$modelName}(\$db);
 \$bean = \$model->getOne(new {$beanName}(['{$this->config->getPrimaryKey()}' => \$param['{$this->config->getPrimaryKey()}']]));
 if (\$bean) {
-    \$this->writeJson(Status::CODE_OK, \$bean, "success");
+    \$this->writeJson(Code::CODE_OK, \$bean, "success");
 } else {
-    \$this->writeJson(Status::CODE_BAD_REQUEST, [], 'fail');
+    \$this->writeJson(Code::CODE_BAD_REQUEST, [], 'fail');
 }
 Body;
         $method->setBody($methodBody);
@@ -361,13 +399,24 @@ Body;
         }
         $methodBody .= <<<Body
 \$param = \$this->request()->getRequestParam();
+
+Body;
+        if($this->config->isValidator()){
+            $methodBody .= <<<Body
+if (\$this->validator( \$param, '{$this->config->getValidate()}.add' ) !== true ) {
+    \$this->writeJson(Code::error, [], \$this->getValidator()->getError() );
+}
+
+Body;
+        }
+        $methodBody .= <<<Body
 \$model = new {$modelName}(\$db);
 
 \$rs = \$model->delete(new $beanName(['{$this->config->getPrimaryKey()}' => \$param['{$this->config->getPrimaryKey()}']]));
 if (\$rs) {
-    \$this->writeJson(Status::CODE_OK, [], "success");
+    \$this->writeJson(Code::CODE_OK, [], "success");
 } else {
-    \$this->writeJson(Status::CODE_BAD_REQUEST, [], 'fail');
+    \$this->writeJson(Code::CODE_BAD_REQUEST, [], 'fail');
 }
 Body;
         $method->setBody($methodBody);
@@ -411,7 +460,7 @@ Body;
 \$limit = (int)(\$param['limit']??20);
 \$model = new {$modelName}(\$db);
 \$data = \$model->getAll(\$page, \$param['keyword']??null, \$limit);
-\$this->writeJson(Status::CODE_OK, \$data, 'success');
+\$this->writeJson(Code::CODE_OK, \$data, 'success');
 Body;
         $method->setBody($methodBody);
         $method->addComment("@apiSuccess {Number} code");
